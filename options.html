@@ -39,6 +39,36 @@
         <small>Nombre de symboles affichés par recherche (3 à 10)</small>
       </div>
 
+      <div class="field-group">
+        <label for="langSelect">Langue de recherche préférée</label>
+        <select id="langSelect">
+          <option value="both">Français et Anglais (défaut)</option>
+          <option value="fr">Français uniquement</option>
+          <option value="en">Anglais uniquement</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label for="modelSelect">Modèle IA</label>
+        <select id="modelSelect">
+          <option value="llama-3.3-70b-versatile">llama-3.3-70b — Précis (recommandé)</option>
+          <option value="llama-3.1-8b-instant">llama-3.1-8b — Rapide</option>
+          <option value="mixtral-8x7b-32768">mixtral-8x7b — Mixte</option>
+        </select>
+      </div>
+
+      <div class="field-group field-inline">
+        <label for="debugToggle">Mode debug</label>
+        <input type="checkbox" id="debugToggle" />
+        <small>Affiche la réponse brute de l'IA en cas d'erreur de parsing</small>
+      </div>
+
+      <div class="field-group">
+        <label>Raccourci clavier</label>
+        <p class="help-text">Raccourci actuel : <kbd>Alt+S</kbd></p>
+        <small>Pour modifier : copiez <code>chrome://extensions/shortcuts</code> dans la barre d'adresse</small>
+      </div>
+
       <div class="button-row">
         <button type="submit" id="saveBtn">Enregistrer</button>
         <button type="button" id="clearBtn" class="btn-secondary">Effacer</button>

@@ -42,14 +42,14 @@ SymbolGen est le seul outil de recherche de symboles Unicode et de génération 
 
 ---
 
-## v1.3 — Personnalisation et fiabilité
+## v1.3 — Personnalisation et fiabilité ✓
 
-- [ ] **Langue préférée** : FR / EN / Bilingue (dans Options, oriente le system prompt)
-- [ ] **Modèle Groq configurable** : `llama-3.3-70b-versatile` (précis) vs `llama-3.1-8b-instant` (rapide)
-- [ ] **Raccourci clavier configurable** (dans Options)
-- [ ] **Mode debug** : toggle pour afficher la réponse brute de l'IA en cas d'erreur
-- [ ] **Tooltip Unicode** : hover sur un symbole → nom complet + codepoint en tooltip
-- [ ] **Insertion LaTeX directe** sur Overleaf et éditeurs LaTeX détectés
+- [x] **Langue préférée** : FR / EN / Bilingue (dans Options, oriente le system prompt)
+- [x] **Modèle Groq configurable** : `llama-3.3-70b-versatile` / `llama-3.1-8b-instant` / `mixtral-8x7b`
+- [x] **Raccourci clavier** : info + lien vers `chrome://extensions/shortcuts` dans Options
+- [x] **Mode debug** : toggle pour afficher la réponse brute de l'IA en cas d'erreur de parsing
+- [x] **Tooltip Unicode** : hover sur le symbole → nom complet + codepoint (attribut `title` natif)
+- [x] **Insérer LaTeX** : bouton "Insérer" dans l'onglet Formules (content script, fonctionne sur Overleaf)
 
 ---
 

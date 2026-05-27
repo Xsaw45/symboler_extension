@@ -54,6 +54,7 @@ const formulaResult    = document.getElementById('formulaResult');
 const formulaSkeleton  = document.getElementById('formulaSkeleton');
 const formulaImg       = document.getElementById('formulaImg');
 const copyLatexBtn     = document.getElementById('copyLatexBtn');
+const insertLatexBtn   = document.getElementById('insertLatexBtn');
 const copySvgBtn       = document.getElementById('copySvgBtn');
 const copyImgBtn       = document.getElementById('copyImgBtn');
 const formulaCode      = document.getElementById('formulaCode');
@@ -65,6 +66,10 @@ let searchHistory   = []; // [{ query }]
 let recentSymbols   = []; // [{ symbol, name, unicode }]
 let maxResults      = 5;
 let currentLatex    = '';
+let groqModel       = 'llama-3.3-70b-versatile';
+let prefLang        = 'both';
+let debugMode       = false;
+let lastRawResponse = '';
 
 // ── Tabs ───────────────────────────────────────────────────────────────────────
 
@@ -207,6 +212,7 @@ function buildCard(item, inFavorites = false, isRecent = false) {
   const symbolEl = document.createElement('span');
   symbolEl.className = 'card-symbol';
   symbolEl.textContent = item.symbol;
+  symbolEl.title = `${item.name}  ${item.unicode}`;
 
   const metaEl = document.createElement('div');
   metaEl.className = 'card-meta';
@@ -375,12 +381,27 @@ function renderFormula(latex) {
 
 // ── API ────────────────────────────────────────────────────────────────────────
 
+// Build symbol system prompt dynamically (lang pref + max results)
+function buildSymbolPrompt() {
+  const langNote = prefLang === 'fr'
+    ? 'The user writes in French.'
+    : prefLang === 'en'
+    ? 'The user writes in English.'
+    : 'The user may write in French or English.';
+  return (
+    `You are a Unicode symbol expert. ${langNote} ` +
+    `Return ONLY a valid JSON array (no markdown, no explanation) of up to ${maxResults} matching symbols, ` +
+    `sorted by relevance. Each object must have exactly: symbol (the character), name (English name), ` +
+    `unicode (e.g. U+2248). If nothing matches, return [].`
+  );
+}
+
 async function groqPost(apiKey, systemPrompt, userContent) {
   const response = await fetch(GROQ_ENDPOINT, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${apiKey}`, 'content-type': 'application/json' },
     body: JSON.stringify({
-      model: GROQ_MODEL,
+      model: groqModel,
       max_tokens: MAX_TOKENS,
       messages: [
         { role: 'system', content: systemPrompt },
@@ -394,6 +415,7 @@ async function groqPost(apiKey, systemPrompt, userContent) {
   }
   const data = await response.json();
   const text = data?.choices?.[0]?.message?.content;
+  lastRawResponse = text?.trim() || '';
   if (!text) throw new Error('Réponse API inattendue.');
   return text.trim();
 }
@@ -403,11 +425,10 @@ async function fetchSymbols(apiKey, query) {
     const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
     return JSON.parse(cleaned);
   };
-  const raw = await groqPost(apiKey, SYSTEM_PROMPT, query);
+  const raw = await groqPost(apiKey, buildSymbolPrompt(), query);
   try {
     return parse(raw);
   } catch {
-    // Retry once with a stricter prompt if JSON parsing fails
     const raw2 = await groqPost(apiKey, SYSTEM_PROMPT_STRICT, query);
     return parse(raw2);
   }
@@ -440,7 +461,9 @@ async function handleSearch() {
     addToHistory(query);
     chrome.storage.local.set({ symbolgenLastQuery: query, symbolgenLastResults: symbols });
   } catch (err) {
-    showError(err.message || 'Une erreur est survenue.');
+    let msg = err.message || 'Une erreur est survenue.';
+    if (debugMode && lastRawResponse) msg += `\n\nRéponse brute :\n${lastRawResponse}`;
+    showError(msg);
   } finally {
     setLoading(false);
   }
@@ -496,6 +519,19 @@ copySvgBtn.addEventListener('click', async () => {
   }
 });
 
+insertLatexBtn.addEventListener('click', async () => {
+  if (!currentLatex) return;
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.id) {
+      chrome.tabs.sendMessage(tab.id, { type: 'INSERT_SYMBOL', symbol: currentLatex });
+      showToast();
+    }
+  } catch (err) {
+    showFormulaError('Impossible d\'insérer : ' + err.message);
+  }
+});
+
 copyImgBtn.addEventListener('click', async () => {
   if (!currentLatex) return;
   try {
@@ -530,6 +566,9 @@ async function init() {
     'symbolgenHistory',
     'symbolgenRecent',
     'symbolgenMaxResults',
+    'symbolgenModel',
+    'symbolgenLang',
+    'symbolgenDebug',
     'symbolgenLastQuery',
     'symbolgenLastResults',
     'symbolgenLastFormulaQuery',
@@ -537,10 +576,13 @@ async function init() {
     'symbolgenActiveTab'
   ]);
 
-  favorites      = data.symbolgenFavs    || [];
-  searchHistory  = data.symbolgenHistory || [];
-  recentSymbols  = data.symbolgenRecent  || [];
-  maxResults     = data.symbolgenMaxResults || 5;
+  favorites      = data.symbolgenFavs        || [];
+  searchHistory  = data.symbolgenHistory     || [];
+  recentSymbols  = data.symbolgenRecent      || [];
+  maxResults     = data.symbolgenMaxResults  || 5;
+  groqModel      = data.symbolgenModel       || 'llama-3.3-70b-versatile';
+  prefLang       = data.symbolgenLang        || 'both';
+  debugMode      = data.symbolgenDebug       || false;
 
   renderHistory();
 
