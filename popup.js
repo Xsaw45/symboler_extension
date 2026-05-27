@@ -2,6 +2,9 @@ const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL    = 'llama-3.3-70b-versatile';
 const MAX_TOKENS    = 256;
 const CODECOGS_BASE = 'https://latex.codecogs.com/png.image?';
+const CODECOGS_SVG  = 'https://latex.codecogs.com/svg.image?';
+const HISTORY_MAX   = 20;
+const RECENT_MAX    = 5;
 
 const SYSTEM_PROMPT =
   'You are a Unicode symbol expert. The user describes a symbol in natural ' +
@@ -9,6 +12,13 @@ const SYSTEM_PROMPT =
   'no explanation) of up to 5 matching symbols, sorted by relevance. Each object ' +
   'must have exactly these fields: symbol (the character itself), name (English ' +
   'name), unicode (e.g. U+2248). If nothing matches, return an empty array [].';
+
+// Stricter prompt used on retry if JSON.parse fails
+const SYSTEM_PROMPT_STRICT =
+  'CRITICAL: Return ONLY a raw JSON array — absolutely no text before or after. ' +
+  'Each object must have exactly: symbol, name, unicode. Up to 5 items. ' +
+  'Example: [{"symbol":"≈","name":"Approximately equal","unicode":"U+2248"}]. ' +
+  'Empty array [] if nothing matches.';
 
 const FORMULA_SYSTEM_PROMPT =
   'You are a LaTeX math expert. The user describes a mathematical formula or expression ' +
@@ -20,9 +30,15 @@ const FORMULA_SYSTEM_PROMPT =
 // ── DOM refs ───────────────────────────────────────────────────────────────────
 const queryInput       = document.getElementById('query');
 const searchBtn        = document.getElementById('searchBtn');
+const historyBtn       = document.getElementById('historyBtn');
+const historyPanel     = document.getElementById('historyPanel');
+const historyList      = document.getElementById('historyList');
+const clearHistoryBtn  = document.getElementById('clearHistoryBtn');
 const errorMsg         = document.getElementById('errorMsg');
 const errorText        = document.getElementById('errorText');
 const spinner          = document.getElementById('spinner');
+const recentSection    = document.getElementById('recentSection');
+const recentGrid       = document.getElementById('recentGrid');
 const resultsEl        = document.getElementById('results');
 const favSection       = document.getElementById('favoritesSection');
 const favGrid          = document.getElementById('favoritesGrid');
@@ -35,15 +51,20 @@ const formulaError     = document.getElementById('formulaError');
 const formulaErrorText = document.getElementById('formulaErrorText');
 const formulaSpinner   = document.getElementById('formulaSpinner');
 const formulaResult    = document.getElementById('formulaResult');
+const formulaSkeleton  = document.getElementById('formulaSkeleton');
 const formulaImg       = document.getElementById('formulaImg');
 const copyLatexBtn     = document.getElementById('copyLatexBtn');
+const copySvgBtn       = document.getElementById('copySvgBtn');
 const copyImgBtn       = document.getElementById('copyImgBtn');
 const formulaCode      = document.getElementById('formulaCode');
 
 // ── State ──────────────────────────────────────────────────────────────────────
-let toastTimer   = null;
-let favorites    = [];
-let currentLatex = '';
+let toastTimer      = null;
+let favorites       = [];
+let searchHistory   = []; // [{ query }]
+let recentSymbols   = []; // [{ symbol, name, unicode }]
+let maxResults      = 5;
+let currentLatex    = '';
 
 // ── Tabs ───────────────────────────────────────────────────────────────────────
 
@@ -61,6 +82,75 @@ function switchTab(tabName) {
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => switchTab(tab.dataset.tab));
 });
+
+// ── History ────────────────────────────────────────────────────────────────────
+
+async function addToHistory(query) {
+  searchHistory = [{ query }, ...searchHistory.filter(h => h.query !== query)].slice(0, HISTORY_MAX);
+  await chrome.storage.local.set({ symbolgenHistory: searchHistory });
+  renderHistory();
+}
+
+function renderHistory() {
+  historyList.textContent = '';
+  if (searchHistory.length === 0) {
+    const li = document.createElement('li');
+    li.className = 'history-empty';
+    li.textContent = 'Aucun historique';
+    historyList.appendChild(li);
+    return;
+  }
+  searchHistory.forEach(({ query }) => {
+    const li = document.createElement('li');
+    li.className = 'history-item';
+    li.textContent = query;
+    li.addEventListener('click', () => {
+      queryInput.value = query;
+      historyPanel.classList.add('hidden');
+      handleSearch();
+    });
+    historyList.appendChild(li);
+  });
+}
+
+historyBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  historyPanel.classList.toggle('hidden');
+});
+
+clearHistoryBtn.addEventListener('click', async (e) => {
+  e.stopPropagation();
+  searchHistory = [];
+  await chrome.storage.local.remove('symbolgenHistory');
+  renderHistory();
+});
+
+document.addEventListener('click', (e) => {
+  if (!historyBtn.contains(e.target) && !historyPanel.contains(e.target)) {
+    historyPanel.classList.add('hidden');
+  }
+});
+
+// ── Recent symbols ─────────────────────────────────────────────────────────────
+
+async function addToRecent(item) {
+  recentSymbols = [
+    { symbol: item.symbol, name: item.name, unicode: item.unicode },
+    ...recentSymbols.filter(r => r.unicode !== item.unicode)
+  ].slice(0, RECENT_MAX);
+  await chrome.storage.local.set({ symbolgenRecent: recentSymbols });
+  renderRecent();
+}
+
+function renderRecent() {
+  recentGrid.textContent = '';
+  if (recentSymbols.length === 0 || resultsEl.children.length > 0) {
+    recentSection.classList.add('hidden');
+    return;
+  }
+  recentSection.classList.remove('hidden');
+  recentSymbols.forEach(item => recentGrid.appendChild(buildCard(item, false, true)));
+}
 
 // ── Favorites ──────────────────────────────────────────────────────────────────
 
@@ -104,10 +194,11 @@ function renderFavorites() {
 }
 
 // ── Card builder ───────────────────────────────────────────────────────────────
+// inFavorites: show × remove button; isRecent: compact style, no star
 
-function buildCard(item, inFavorites = false) {
+function buildCard(item, inFavorites = false, isRecent = false) {
   const card = document.createElement('div');
-  card.className = 'result-card';
+  card.className = 'result-card' + (isRecent ? ' card-recent' : '');
 
   const copyBtn = document.createElement('button');
   copyBtn.className = 'card-copy';
@@ -133,30 +224,38 @@ function buildCard(item, inFavorites = false) {
   copyBtn.appendChild(symbolEl);
   copyBtn.appendChild(metaEl);
 
-  copyBtn.addEventListener('click', () => copyAndInsert(item.symbol));
+  copyBtn.addEventListener('click', () => {
+    addToRecent(item);
+    copyAndInsert(item.symbol);
+  });
 
-  const actionBtn = document.createElement('button');
-  if (inFavorites) {
-    actionBtn.className = 'remove-btn';
-    actionBtn.textContent = '×';
-    actionBtn.title = 'Retirer des favoris';
-    actionBtn.addEventListener('click', () => toggleFavorite(item));
+  if (!isRecent) {
+    const actionBtn = document.createElement('button');
+    if (inFavorites) {
+      actionBtn.className = 'remove-btn';
+      actionBtn.textContent = '×';
+      actionBtn.title = 'Retirer des favoris';
+      actionBtn.addEventListener('click', () => toggleFavorite(item));
+    } else {
+      actionBtn.className = 'star-btn';
+      actionBtn.dataset.unicode = item.unicode;
+      syncStarBtn(actionBtn, item.unicode);
+      actionBtn.addEventListener('click', () => toggleFavorite(item));
+    }
+    card.appendChild(copyBtn);
+    card.appendChild(actionBtn);
   } else {
-    actionBtn.className = 'star-btn';
-    actionBtn.dataset.unicode = item.unicode;
-    syncStarBtn(actionBtn, item.unicode);
-    actionBtn.addEventListener('click', () => toggleFavorite(item));
+    card.appendChild(copyBtn);
   }
 
-  card.appendChild(copyBtn);
-  card.appendChild(actionBtn);
   return card;
 }
 
-// ── Symbols results ────────────────────────────────────────────────────────────
+// ── Results ────────────────────────────────────────────────────────────────────
 
 function renderResults(symbols) {
   resultsEl.textContent = '';
+  recentSection.classList.add('hidden');
   if (!symbols || symbols.length === 0) {
     const empty = document.createElement('p');
     empty.className = 'empty-state';
@@ -164,15 +263,12 @@ function renderResults(symbols) {
     resultsEl.appendChild(empty);
     return;
   }
-  symbols.slice(0, 5).forEach(item => resultsEl.appendChild(buildCard(item, false)));
+  symbols.slice(0, maxResults).forEach(item => resultsEl.appendChild(buildCard(item, false)));
 }
 
 // ── Copy + insert ──────────────────────────────────────────────────────────────
-// Always copies to clipboard; also tries to insert directly into the focused
-// element in the current tab via the content script (silent fail if unavailable).
 
 async function copyAndInsert(symbol) {
-  // 1. Clipboard (always works)
   try {
     await navigator.clipboard.writeText(symbol);
   } catch {
@@ -183,17 +279,10 @@ async function copyAndInsert(symbol) {
     document.execCommand('copy');
     document.body.removeChild(ta);
   }
-
-  // 2. Direct insertion into active element of the current tab
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab?.id) {
-      chrome.tabs.sendMessage(tab.id, { type: 'INSERT_SYMBOL', symbol });
-    }
-  } catch {
-    // Silently ignore — chrome:// pages, new tab page, etc.
-  }
-
+    if (tab?.id) chrome.tabs.sendMessage(tab.id, { type: 'INSERT_SYMBOL', symbol });
+  } catch { /* silent */ }
   showToast();
 }
 
@@ -256,38 +345,53 @@ function showToast() {
 // ── Formula rendering ──────────────────────────────────────────────────────────
 
 function latexToImgUrl(latex) {
-  // \dpi{150} = resolution, \bg{white} = white background always readable
   return CODECOGS_BASE + encodeURIComponent('\\dpi{150}\\bg{white}' + latex);
+}
+
+function latexToSvgUrl(latex) {
+  return CODECOGS_SVG + encodeURIComponent('\\bg{white}' + latex);
 }
 
 function renderFormula(latex) {
   currentLatex = latex;
-  formulaImg.src = latexToImgUrl(latex);
   formulaCode.textContent = latex;
+
+  // Show skeleton while image loads
+  formulaSkeleton.classList.remove('hidden');
+  formulaImg.classList.add('hidden');
+
+  formulaImg.onload = () => {
+    formulaSkeleton.classList.add('hidden');
+    formulaImg.classList.remove('hidden');
+  };
+  formulaImg.onerror = () => {
+    formulaSkeleton.classList.add('hidden');
+    formulaImg.classList.remove('hidden');
+  };
+
+  formulaImg.src = latexToImgUrl(latex);
   formulaResult.classList.remove('hidden');
 }
 
-// ── API calls ──────────────────────────────────────────────────────────────────
+// ── API ────────────────────────────────────────────────────────────────────────
 
-async function groqPost(apiKey, systemPrompt, userContent, maxTokens = MAX_TOKENS) {
+async function groqPost(apiKey, systemPrompt, userContent) {
   const response = await fetch(GROQ_ENDPOINT, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${apiKey}`, 'content-type': 'application/json' },
     body: JSON.stringify({
       model: GROQ_MODEL,
-      max_tokens: maxTokens,
+      max_tokens: MAX_TOKENS,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user',   content: userContent }
       ]
     })
   });
-
   if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    throw new Error(`Erreur API (${response.status}): ${errData?.error?.message || response.statusText}`);
+    const err = await response.json().catch(() => ({}));
+    throw new Error(`Erreur API (${response.status}): ${err?.error?.message || response.statusText}`);
   }
-
   const data = await response.json();
   const text = data?.choices?.[0]?.message?.content;
   if (!text) throw new Error('Réponse API inattendue.');
@@ -295,9 +399,18 @@ async function groqPost(apiKey, systemPrompt, userContent, maxTokens = MAX_TOKEN
 }
 
 async function fetchSymbols(apiKey, query) {
+  const parse = raw => {
+    const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+    return JSON.parse(cleaned);
+  };
   const raw = await groqPost(apiKey, SYSTEM_PROMPT, query);
-  const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
-  return JSON.parse(cleaned);
+  try {
+    return parse(raw);
+  } catch {
+    // Retry once with a stricter prompt if JSON parsing fails
+    const raw2 = await groqPost(apiKey, SYSTEM_PROMPT_STRICT, query);
+    return parse(raw2);
+  }
 }
 
 async function fetchLatex(apiKey, query) {
@@ -314,6 +427,8 @@ async function handleSearch() {
 
   hideError();
   resultsEl.textContent = '';
+  recentSection.classList.add('hidden');
+  historyPanel.classList.add('hidden');
   setLoading(true);
 
   try {
@@ -322,6 +437,7 @@ async function handleSearch() {
 
     const symbols = await fetchSymbols(apiKey, query);
     renderResults(symbols);
+    addToHistory(query);
     chrome.storage.local.set({ symbolgenLastQuery: query, symbolgenLastResults: symbols });
   } catch (err) {
     showError(err.message || 'Une erreur est survenue.');
@@ -367,16 +483,29 @@ copyLatexBtn.addEventListener('click', () => {
   });
 });
 
+copySvgBtn.addEventListener('click', async () => {
+  if (!currentLatex) return;
+  try {
+    const response = await fetch(latexToSvgUrl(currentLatex));
+    if (!response.ok) throw new Error('Fetch SVG failed');
+    const svgText = await response.text();
+    await navigator.clipboard.writeText(svgText);
+    showToast();
+  } catch (err) {
+    showFormulaError('Impossible de copier le SVG: ' + err.message);
+  }
+});
+
 copyImgBtn.addEventListener('click', async () => {
   if (!currentLatex) return;
   try {
     const response = await fetch(latexToImgUrl(currentLatex));
-    if (!response.ok) throw new Error('Erreur lors du téléchargement de l\'image.');
+    if (!response.ok) throw new Error('Fetch image failed');
     const blob = await response.blob();
     await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
     showToast();
   } catch (err) {
-    showFormulaError(err.message);
+    showFormulaError('Impossible de copier l\'image: ' + err.message);
   }
 });
 
@@ -387,11 +516,20 @@ queryInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleSearc
 formulaBtn.addEventListener('click', handleFormulaSearch);
 formulaQuery.addEventListener('keydown', e => { if (e.key === 'Enter') handleFormulaSearch(); });
 
+// Show recent symbols when input is cleared
+queryInput.addEventListener('input', () => {
+  if (queryInput.value === '' && resultsEl.children.length === 0) renderRecent();
+  else recentSection.classList.add('hidden');
+});
+
 // ── Init ───────────────────────────────────────────────────────────────────────
 
 async function init() {
   const data = await chrome.storage.local.get([
     'symbolgenFavs',
+    'symbolgenHistory',
+    'symbolgenRecent',
+    'symbolgenMaxResults',
     'symbolgenLastQuery',
     'symbolgenLastResults',
     'symbolgenLastFormulaQuery',
@@ -399,13 +537,24 @@ async function init() {
     'symbolgenActiveTab'
   ]);
 
-  favorites = data.symbolgenFavs || [];
+  favorites      = data.symbolgenFavs    || [];
+  searchHistory  = data.symbolgenHistory || [];
+  recentSymbols  = data.symbolgenRecent  || [];
+  maxResults     = data.symbolgenMaxResults || 5;
 
-  if (data.symbolgenLastQuery)         queryInput.value  = data.symbolgenLastQuery;
-  if (data.symbolgenLastResults?.length > 0) renderResults(data.symbolgenLastResults);
+  renderHistory();
 
-  if (data.symbolgenLastFormulaQuery)  formulaQuery.value = data.symbolgenLastFormulaQuery;
-  if (data.symbolgenLastLatex)         renderFormula(data.symbolgenLastLatex);
+  if (data.symbolgenLastQuery) {
+    queryInput.value = data.symbolgenLastQuery;
+  }
+  if (data.symbolgenLastResults?.length > 0) {
+    renderResults(data.symbolgenLastResults);
+  } else {
+    renderRecent();
+  }
+
+  if (data.symbolgenLastFormulaQuery) formulaQuery.value = data.symbolgenLastFormulaQuery;
+  if (data.symbolgenLastLatex)        renderFormula(data.symbolgenLastLatex);
 
   renderFavorites();
 

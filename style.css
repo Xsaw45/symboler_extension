@@ -231,6 +231,7 @@ button {
   text-align: center;
   user-select: none;
   flex-shrink: 0;
+  font-family: 'Noto Sans Symbols', 'Noto Sans Symbols 2', 'Segoe UI Symbol', 'Apple Symbols', serif;
 }
 
 .card-meta {
@@ -588,6 +589,140 @@ kbd {
   padding: 12px 32px;
   font-size: 15px;
   font-weight: 600;
+}
+
+/* ── Icon button (history) ────────────────────────────────────────────────── */
+.icon-btn {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.icon-btn:hover {
+  background: var(--surface-2);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ── History panel ────────────────────────────────────────────────────────── */
+.history-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.clear-btn {
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.12s, background 0.12s;
+}
+
+.clear-btn:hover {
+  color: var(--error-text);
+  background: var(--error-bg);
+}
+
+.history-list {
+  list-style: none;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.history-item {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.1s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history-item:hover {
+  background: var(--card-hover);
+  color: var(--accent);
+}
+
+.history-empty {
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ── Recent symbols ───────────────────────────────────────────────────────── */
+.card-recent .card-copy {
+  padding: 7px 10px;
+}
+
+.card-recent .card-symbol {
+  font-size: 22px;
+  min-width: 28px;
+}
+
+.card-recent .card-name {
+  font-size: 12px;
+}
+
+.card-recent .card-code {
+  font-size: 10px;
+}
+
+/* ── Formula skeleton loader ──────────────────────────────────────────────── */
+.formula-skeleton {
+  width: 220px;
+  height: 44px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--surface) 25%,
+    var(--surface-2) 50%,
+    var(--surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Range slider (options) ───────────────────────────────────────────────── */
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+  cursor: pointer;
 }
 
 /* ── Tabs ─────────────────────────────────────────────────────────────────── */
