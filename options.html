@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SymbolGen — Options</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container options-container">
+    <header>
+      <h1>SymbolGen</h1>
+      <span class="subtitle">Configuration</span>
+    </header>
+
+    <form id="optionsForm">
+      <div class="field-group">
+        <label for="apiKeyInput">Clé API Groq</label>
+        <input
+          type="password"
+          id="apiKeyInput"
+          placeholder="gsk_..."
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <small>
+          Obtenez votre clé gratuite sur
+          <a href="https://console.groq.com/keys" target="_blank" rel="noopener">
+            console.groq.com
+          </a>
+        </small>
+      </div>
+
+      <div class="button-row">
+        <button type="submit" id="saveBtn">Enregistrer</button>
+        <button type="button" id="clearBtn" class="btn-secondary">Effacer</button>
+      </div>
+
+      <div id="saveStatus" class="save-status hidden"></div>
+    </form>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
