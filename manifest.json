@@ -19,7 +19,7 @@
   },
   "options_page": "options.html",
   "permissions": ["storage", "clipboardWrite"],
-  "host_permissions": ["https://api.groq.com/*"],
+  "host_permissions": ["https://api.groq.com/*", "https://latex.codecogs.com/*"],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   }

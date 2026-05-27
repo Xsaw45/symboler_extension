@@ -415,6 +415,106 @@ button {
   }
 }
 
+/* ── Tabs ─────────────────────────────────────────────────────────────────── */
+.tabs {
+  display: flex;
+  gap: 3px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 3px;
+}
+
+.tab {
+  flex: 1;
+  padding: 6px 0;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tab:hover {
+  color: var(--text-primary);
+}
+
+.tab.active {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+/* ── Panes ────────────────────────────────────────────────────────────────── */
+#symbolsPane,
+#formulaPane {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Formula pane ─────────────────────────────────────────────────────────── */
+#formulaResult {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formula-preview {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 64px;
+}
+
+.formula-preview img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.formula-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.copy-action-btn {
+  flex: 1;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.copy-action-btn:hover {
+  background: var(--surface-2);
+  border-color: var(--accent);
+}
+
+.latex-code {
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-size: 12px;
+  color: var(--text-primary);
+  word-break: break-all;
+  line-height: 1.6;
+}
+
 /* ── Utility ──────────────────────────────────────────────────────────────── */
 .hidden {
   display: none !important;

@@ -12,31 +12,58 @@
       <h1>SymbolGen</h1>
     </header>
 
-    <div class="search-area">
-      <input
-        type="text"
-        id="query"
-        placeholder="ex: environ égal, flèche droite..."
-        autocomplete="off"
-        autofocus
-      />
-      <button id="searchBtn">Chercher</button>
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="symbols" role="tab">Symboles</button>
+      <button class="tab" data-tab="formula" role="tab">Formules</button>
     </div>
 
-    <div id="errorMsg" class="error-banner hidden">
-      <span id="errorText"></span>
-    </div>
-
-    <div id="spinner" class="spinner hidden"></div>
-
-    <div id="results" class="results-grid"></div>
-
-    <div id="favoritesSection" class="hidden">
-      <div class="section-header">
-        <span>Favoris</span>
-        <span id="favCount" class="fav-count"></span>
+    <!-- Symbols pane -->
+    <div id="symbolsPane" role="tabpanel">
+      <div class="search-area">
+        <input
+          type="text"
+          id="query"
+          placeholder="ex: environ égal, flèche droite..."
+          autocomplete="off"
+          autofocus
+        />
+        <button id="searchBtn">Chercher</button>
       </div>
-      <div id="favoritesGrid" class="results-grid"></div>
+      <div id="errorMsg" class="error-banner hidden"><span id="errorText"></span></div>
+      <div id="spinner" class="spinner hidden"></div>
+      <div id="results" class="results-grid"></div>
+      <div id="favoritesSection" class="hidden">
+        <div class="section-header">
+          <span>Favoris</span>
+          <span id="favCount" class="fav-count"></span>
+        </div>
+        <div id="favoritesGrid" class="results-grid"></div>
+      </div>
+    </div>
+
+    <!-- Formula pane -->
+    <div id="formulaPane" class="hidden" role="tabpanel">
+      <div class="search-area">
+        <input
+          type="text"
+          id="formulaQuery"
+          placeholder="ex: y égal 2x² plus 5..."
+          autocomplete="off"
+        />
+        <button id="formulaBtn">Générer</button>
+      </div>
+      <div id="formulaError" class="error-banner hidden"><span id="formulaErrorText"></span></div>
+      <div id="formulaSpinner" class="spinner hidden"></div>
+      <div id="formulaResult" class="hidden">
+        <div class="formula-preview">
+          <img id="formulaImg" src="" alt="Formule mathématique" />
+        </div>
+        <div class="formula-actions">
+          <button id="copyLatexBtn" class="copy-action-btn">Copier LaTeX</button>
+          <button id="copyImgBtn" class="copy-action-btn">Copier l'image</button>
+        </div>
+        <code id="formulaCode" class="latex-code"></code>
+      </div>
     </div>
 
     <div id="toast" class="toast hidden">Copié !</div>
