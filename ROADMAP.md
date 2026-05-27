@@ -53,27 +53,32 @@ SymbolGen est le seul outil de recherche de symboles Unicode et de génération 
 
 ---
 
-## v2.0 — Monétisation (Freemium)
+## v2.0 — Monétisation (Freemium) ✓
 
 **Objectif : première revenue**
 
 ### Tier Gratuit (forever)
-- Symboles Unicode : 5 recherches/jour
-- Formules LaTeX : 3 formules/jour
-- Favoris : 10 max
+- [x] Symboles Unicode : 5 recherches/jour
+- [x] Formules LaTeX : 3 formules/jour
+- [x] Favoris : 10 max
 
 ### Tier Pro (4,99 €/mois ou 29,99 €/an)
-- Recherches illimitées
-- Favoris illimités + export JSON/CSV
-- Historique des 50 dernières recherches
-- Résultats élargis (10 symboles au lieu de 5)
-- Modèle IA premium
+- [x] Recherches illimitées
+- [x] Favoris illimités
+- [x] Historique étendu
+- [x] Résultats élargis
+- [ ] Export JSON/CSV des favoris
+- [ ] Modèle IA premium
 
-### Infrastructure nécessaire pour v2.0
-- Backend léger (Cloudflare Workers ou Railway) pour gérer les licences
-- Intégration Stripe/Paddle via ExtensionPay
-- Compteurs d'usage dans `chrome.storage.local`
-- Gate UI sur les features premium
+### Implémenté en v2.0
+- [x] Compteurs d'usage dans `chrome.storage.local` (reset quotidien automatique)
+- [x] Gate UI sur les features premium (upgrade bar)
+- [x] Clé de licence Pro `SYMG-XXXX-XXXX-XXXX` (activation dans Options)
+- [x] Badge "Pro" dans le header du popup
+
+### Infrastructure future (v2.1+)
+- [ ] Backend léger (Cloudflare Workers ou Railway) pour valider les licences
+- [ ] Intégration Stripe/Paddle via ExtensionPay
 
 ---
 

@@ -883,6 +883,70 @@ select:focus {
   margin: 0;
 }
 
+/* ── Upgrade bar (freemium) ───────────────────────────────────────────────── */
+.upgrade-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: linear-gradient(135deg, #f0edff 0%, #e8e4ff 100%);
+  border: 1px solid #c4c0f0;
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #3d3a8c;
+}
+
+@media (prefers-color-scheme: dark) {
+  .upgrade-bar {
+    background: linear-gradient(135deg, #2a2850 0%, #1e1c40 100%);
+    border-color: #4a4790;
+    color: #b0adff;
+  }
+}
+
+.upgrade-cta {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.upgrade-cta:hover {
+  background: var(--accent-hover);
+}
+
+/* ── Pro badge ────────────────────────────────────────────────────────────── */
+.pro-badge {
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--accent);
+  color: #ffffff;
+  padding: 2px 8px;
+  border-radius: 10px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+/* ── License row (options) ────────────────────────────────────────────────── */
+.license-row {
+  display: flex;
+  gap: 8px;
+}
+
+.license-row input {
+  font-family: 'SF Mono', 'Consolas', monospace;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
 /* ── Utility ──────────────────────────────────────────────────────────────── */
 .hidden {
   display: none !important;

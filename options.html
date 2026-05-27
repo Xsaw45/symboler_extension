@@ -57,6 +57,23 @@
         </select>
       </div>
 
+      <div class="field-group">
+        <label for="licenseInput">Clé de licence Pro <span id="proStatusBadge" class="pro-badge hidden">Actif</span></label>
+        <div class="license-row">
+          <input
+            type="text"
+            id="licenseInput"
+            placeholder="SYMG-XXXX-XXXX-XXXX"
+            autocomplete="off"
+            spellcheck="false"
+            maxlength="19"
+          />
+          <button type="button" id="activateBtn" class="btn-secondary">Activer</button>
+        </div>
+        <div id="licenseStatus" class="save-status hidden"></div>
+        <small>Accédez à SymbolGen Pro : recherches illimitées, favoris illimités, historique étendu.</small>
+      </div>
+
       <div class="field-group field-inline">
         <label for="debugToggle">Mode debug</label>
         <input type="checkbox" id="debugToggle" />

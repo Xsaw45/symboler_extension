@@ -10,6 +10,7 @@
   <div class="container">
     <header>
       <h1>SymbolGen</h1>
+      <span id="proBadge" class="pro-badge hidden">Pro</span>
     </header>
 
     <div class="tabs" role="tablist">
@@ -46,6 +47,10 @@
 
       <div id="errorMsg" class="error-banner hidden"><span id="errorText"></span></div>
       <div id="spinner" class="spinner hidden"></div>
+      <div id="upgradeBar" class="upgrade-bar hidden">
+        <span>Limite atteinte · <strong>5 recherches/jour</strong> en version gratuite</span>
+        <button type="button" id="upgradeSymbolsBtn" class="upgrade-cta">Passer Pro</button>
+      </div>
 
       <div id="recentSection" class="hidden">
         <div class="section-header">
@@ -78,6 +83,10 @@
       </div>
       <div id="formulaError" class="error-banner hidden"><span id="formulaErrorText"></span></div>
       <div id="formulaSpinner" class="spinner hidden"></div>
+      <div id="upgradeBarFormula" class="upgrade-bar hidden">
+        <span>Limite atteinte · <strong>3 formules/jour</strong> en version gratuite</span>
+        <button type="button" id="upgradeFormulaBtn" class="upgrade-cta">Passer Pro</button>
+      </div>
       <div id="formulaResult" class="hidden">
         <div class="formula-preview">
           <div id="formulaSkeleton" class="formula-skeleton hidden"></div>

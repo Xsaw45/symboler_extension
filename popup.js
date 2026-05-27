@@ -6,6 +6,8 @@ const CODECOGS_SVG  = 'https://latex.codecogs.com/svg.image?';
 const HISTORY_MAX   = 20;
 const RECENT_MAX    = 5;
 
+const FREE_LIMITS = { symbolsPerDay: 5, formulasPerDay: 3, maxFavorites: 10 };
+
 const SYSTEM_PROMPT =
   'You are a Unicode symbol expert. The user describes a symbol in natural ' +
   'language (French or English). Return ONLY a valid JSON array (no markdown, ' +
@@ -58,6 +60,9 @@ const insertLatexBtn   = document.getElementById('insertLatexBtn');
 const copySvgBtn       = document.getElementById('copySvgBtn');
 const copyImgBtn       = document.getElementById('copyImgBtn');
 const formulaCode      = document.getElementById('formulaCode');
+const upgradeBar       = document.getElementById('upgradeBar');
+const upgradeBarFormula= document.getElementById('upgradeBarFormula');
+const proBadge         = document.getElementById('proBadge');
 
 // ── State ──────────────────────────────────────────────────────────────────────
 let toastTimer      = null;
@@ -70,6 +75,42 @@ let groqModel       = 'llama-3.3-70b-versatile';
 let prefLang        = 'both';
 let debugMode       = false;
 let lastRawResponse = '';
+let proStatus       = false;
+let todayUsage      = { date: '', symbols: 0, formulas: 0 };
+
+// ── Freemium ───────────────────────────────────────────────────────────────────
+
+async function loadUsage() {
+  const data = await chrome.storage.local.get(['symbolgenUsage', 'symbolgenLicense']);
+  const today = new Date().toISOString().slice(0, 10);
+  const saved = data.symbolgenUsage;
+  if (saved && saved.date === today) {
+    todayUsage = saved;
+  } else {
+    todayUsage = { date: today, symbols: 0, formulas: 0 };
+    await chrome.storage.local.set({ symbolgenUsage: todayUsage });
+  }
+  const license = data.symbolgenLicense || '';
+  proStatus = /^SYMG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/i.test(license);
+  proBadge.classList.toggle('hidden', !proStatus);
+}
+
+function isLimitReached(type) {
+  if (proStatus) return false;
+  if (type === 'symbols')  return todayUsage.symbols  >= FREE_LIMITS.symbolsPerDay;
+  if (type === 'formulas') return todayUsage.formulas >= FREE_LIMITS.formulasPerDay;
+  return false;
+}
+
+async function incrementUsage(type) {
+  if (proStatus) return;
+  if (type === 'symbols')  todayUsage.symbols++;
+  if (type === 'formulas') todayUsage.formulas++;
+  await chrome.storage.local.set({ symbolgenUsage: todayUsage });
+}
+
+document.getElementById('upgradeSymbolsBtn').addEventListener('click', () => chrome.runtime.openOptionsPage());
+document.getElementById('upgradeFormulaBtn').addEventListener('click', () => chrome.runtime.openOptionsPage());
 
 // ── Tabs ───────────────────────────────────────────────────────────────────────
 
@@ -171,6 +212,11 @@ async function toggleFavorite(item) {
   if (isFavorite(item.unicode)) {
     favorites = favorites.filter(f => f.unicode !== item.unicode);
   } else {
+    if (!proStatus && favorites.length >= FREE_LIMITS.maxFavorites) {
+      showError(`Limite de ${FREE_LIMITS.maxFavorites} favoris atteinte. Passez Pro pour des favoris illimités.`);
+      setTimeout(hideError, 4000);
+      return;
+    }
     favorites.push({ symbol: item.symbol, name: item.name, unicode: item.unicode });
   }
   await saveFavorites();
@@ -446,7 +492,13 @@ async function handleSearch() {
   const query = queryInput.value.trim();
   if (!query) return;
 
+  if (isLimitReached('symbols')) {
+    upgradeBar.classList.remove('hidden');
+    return;
+  }
+
   hideError();
+  upgradeBar.classList.add('hidden');
   resultsEl.textContent = '';
   recentSection.classList.add('hidden');
   historyPanel.classList.add('hidden');
@@ -457,6 +509,7 @@ async function handleSearch() {
     if (!apiKey) { showError('Clé API manquante.', true); return; }
 
     const symbols = await fetchSymbols(apiKey, query);
+    await incrementUsage('symbols');
     renderResults(symbols);
     addToHistory(query);
     chrome.storage.local.set({ symbolgenLastQuery: query, symbolgenLastResults: symbols });
@@ -473,7 +526,13 @@ async function handleFormulaSearch() {
   const query = formulaQuery.value.trim();
   if (!query) return;
 
+  if (isLimitReached('formulas')) {
+    upgradeBarFormula.classList.remove('hidden');
+    return;
+  }
+
   hideFormulaError();
+  upgradeBarFormula.classList.add('hidden');
   formulaResult.classList.add('hidden');
   setFormulaLoading(true);
 
@@ -482,6 +541,7 @@ async function handleFormulaSearch() {
     if (!apiKey) { showFormulaError('Clé API manquante.', true); return; }
 
     const latex = await fetchLatex(apiKey, query);
+    await incrementUsage('formulas');
     renderFormula(latex);
     chrome.storage.local.set({ symbolgenLastFormulaQuery: query, symbolgenLastLatex: latex });
   } catch (err) {
@@ -561,6 +621,8 @@ queryInput.addEventListener('input', () => {
 // ── Init ───────────────────────────────────────────────────────────────────────
 
 async function init() {
+  await loadUsage();
+
   const data = await chrome.storage.local.get([
     'symbolgenFavs',
     'symbolgenHistory',
