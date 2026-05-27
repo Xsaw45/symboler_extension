@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bienvenue sur SymbolGen</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="welcome-body">
+  <div class="welcome-wrap">
+
+    <header class="welcome-header">
+      <div class="welcome-logo">Σ</div>
+      <h1>SymbolGen</h1>
+      <p class="welcome-subtitle">Symboles Unicode &amp; Formules LaTeX par IA</p>
+    </header>
+
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h2>Obtenez votre clé API gratuite</h2>
+          <p>SymbolGen utilise <strong>Groq</strong> pour comprendre vos descriptions en français ou en anglais. La clé est gratuite et s'obtient en 30 secondes.</p>
+          <a class="btn-primary" href="https://console.groq.com/keys" target="_blank" rel="noopener">
+            Créer ma clé sur console.groq.com →
+          </a>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h2>Entrez-la dans les Options</h2>
+          <p>Cliquez sur le bouton ci-dessous pour ouvrir la page de configuration et coller votre clé <code>gsk_...</code>.</p>
+          <button class="btn-primary" id="openOptions">Ouvrir les Options</button>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h2>Cherchez n'importe quel symbole</h2>
+          <p>Tapez une description en français ou en anglais — <em>"environ égal"</em>, <em>"flèche droite"</em>, <em>"intégrale"</em> — et cliquez sur le résultat pour l'insérer ou le copier.</p>
+          <div class="demo-chips">
+            <span class="chip">environ égal → ≈</span>
+            <span class="chip">pas égal → ≠</span>
+            <span class="chip">infini → ∞</span>
+            <span class="chip">pour tout → ∀</span>
+            <span class="chip">delta majuscule → Δ</span>
+            <span class="chip">copyright → ©</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h2>Générez des formules LaTeX</h2>
+          <p>Utilisez l'onglet <strong>Formules</strong> pour décrire une équation en langage naturel et obtenir le code LaTeX avec un rendu visuel.</p>
+          <div class="demo-chips">
+            <span class="chip">y égal 2x² plus 5</span>
+            <span class="chip">intégrale de 0 à infini de e^-x²</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="welcome-tip">
+      <strong>Astuce :</strong> Appuyez sur <kbd>Alt+S</kbd> pour ouvrir SymbolGen depuis n'importe quelle page.
+    </div>
+
+    <div class="welcome-footer">
+      <button class="btn-secondary" id="closeWelcome">C'est parti !</button>
+    </div>
+
+  </div>
+
+  <script src="welcome.js"></script>
+</body>
+</html>

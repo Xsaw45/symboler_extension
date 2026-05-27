@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "SymbolGen",
-  "version": "1.0.0",
-  "description": "Find Unicode symbols from natural language descriptions (FR/EN)",
+  "version": "1.1.0",
+  "description": "Symboles Unicode & Formules LaTeX par IA — langage naturel FR/EN",
   "icons": {
     "16": "icons/icon16.svg",
     "48": "icons/icon48.svg",
@@ -17,9 +17,32 @@
     },
     "default_title": "SymbolGen"
   },
+  "background": {
+    "service_worker": "background.js"
+  },
   "options_page": "options.html",
-  "permissions": ["storage", "clipboardWrite"],
+  "permissions": ["storage", "clipboardWrite", "activeTab"],
   "host_permissions": ["https://api.groq.com/*", "https://latex.codecogs.com/*"],
+  "content_scripts": [{
+    "matches": ["*://*/*"],
+    "js": ["content.js"],
+    "run_at": "document_idle"
+  }],
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+S",
+        "windows": "Alt+S",
+        "mac": "Alt+S",
+        "linux": "Alt+S"
+      },
+      "description": "Ouvrir SymbolGen"
+    }
+  },
+  "web_accessible_resources": [{
+    "resources": ["welcome.html"],
+    "matches": ["<all_urls>"]
+  }],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   }

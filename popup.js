@@ -133,17 +133,7 @@ function buildCard(item, inFavorites = false) {
   copyBtn.appendChild(symbolEl);
   copyBtn.appendChild(metaEl);
 
-  copyBtn.addEventListener('click', () => {
-    navigator.clipboard.writeText(item.symbol).then(showToast).catch(() => {
-      const ta = document.createElement('textarea');
-      ta.value = item.symbol;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-      showToast();
-    });
-  });
+  copyBtn.addEventListener('click', () => copyAndInsert(item.symbol));
 
   const actionBtn = document.createElement('button');
   if (inFavorites) {
@@ -175,6 +165,36 @@ function renderResults(symbols) {
     return;
   }
   symbols.slice(0, 5).forEach(item => resultsEl.appendChild(buildCard(item, false)));
+}
+
+// ── Copy + insert ──────────────────────────────────────────────────────────────
+// Always copies to clipboard; also tries to insert directly into the focused
+// element in the current tab via the content script (silent fail if unavailable).
+
+async function copyAndInsert(symbol) {
+  // 1. Clipboard (always works)
+  try {
+    await navigator.clipboard.writeText(symbol);
+  } catch {
+    const ta = document.createElement('textarea');
+    ta.value = symbol;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+
+  // 2. Direct insertion into active element of the current tab
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.id) {
+      chrome.tabs.sendMessage(tab.id, { type: 'INSERT_SYMBOL', symbol });
+    }
+  } catch {
+    // Silently ignore — chrome:// pages, new tab page, etc.
+  }
+
+  showToast();
 }
 
 // ── UI helpers ─────────────────────────────────────────────────────────────────
